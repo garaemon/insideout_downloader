@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+
+import urllib.request
+import json
+import arrow
+from mutagen.easyid3 import EasyID3
+
+INSIDEOUT_URL = 'https://newapi.block.fm/user/v1/radios/8'
+
+if __name__ == '__main__':
+    response = urllib.request.urlopen(INSIDEOUT_URL)
+    data = response.read()
+    json_data = json.loads(data.decode('utf-8'))
+    mp3_url = json_data['data']['radio']['radios_has_sound_sources'][0][
+        'sound_source']['sound_file']['url']
+    started_at_str = json_data['data']['radio']['radios_has_sound_sources'][0][
+        'sound_source']['start_at']
+    started_at = arrow.get(started_at_str).replace(tzinfo='Asia/Tokyo')
+    title = '{0:04d}-{1:02d}-{2:02d}-insideout'.format(
+        started_at.year, started_at.month, started_at.day)
+    output_filename = title + '.mp3'
+    print('Downloading mp3 file from {}'.format(mp3_url))
+    urllib.request.urlretrieve(mp3_url, output_filename)
+    tags = EasyID3(output_filename)
+    tags['title'] = title
+    tags['artist'] = '渡辺志保 & DJ YANATAKE'
+    tags['album'] = 'insideout'
+    tags.save()
+    print('Done, check out {}'.format(output_filename))
