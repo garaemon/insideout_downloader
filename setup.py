@@ -10,6 +10,6 @@ setup(
     author_email='garaemon@gmail.com',
     description='Download insideout mp3 file',
     packages=find_packages(),
-    install_requires=['beautifulsoup4'],
-    scripts=['bin/insideout_downloader', 'arrow', 'mutagen']
+    install_requires=['beautifulsoup4', 'arrow', 'mutagen'],
+    scripts=['bin/insideout_downloader']
 )
