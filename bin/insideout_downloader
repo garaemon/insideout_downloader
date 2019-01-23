@@ -4,15 +4,23 @@ import urllib.request
 import json
 import arrow
 import mutagen
+import argparse
 from mutagen.easyid3 import EasyID3
+
 
 INSIDEOUT_URL = 'https://newapi.block.fm/user/v1/radios/8'
 
 if __name__ == '__main__':
-    TARGET_INDEX = 0 # should be argument
+    parser = argparse.ArgumentParser(description='Download inside-out mp3')
+    parser.add_argument('--index', type=int, default=0)
+    args = parser.parse_args()
+
+    TARGET_INDEX = args.index # should be argument
     response = urllib.request.urlopen(INSIDEOUT_URL)
     data = response.read()
     json_data = json.loads(data.decode('utf-8'))
+    uploaded_resource_num = len(json_data['data']['radio']['radios_has_sound_sources'])
+    print('{} audio files are available'.format(uploaded_resource_num))
     mp3_url = json_data['data']['radio']['radios_has_sound_sources'][TARGET_INDEX][
         'sound_source']['sound_file']['url']
     started_at_str = json_data['data']['radio']['radios_has_sound_sources'][TARGET_INDEX][
