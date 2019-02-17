@@ -3,6 +3,7 @@
 import urllib.request
 import json
 import arrow
+import datetime
 import mutagen
 import argparse
 from mutagen.easyid3 import EasyID3
@@ -13,18 +14,37 @@ INSIDEOUT_URL = 'https://newapi.block.fm/user/v1/radios/8'
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download inside-out mp3')
     parser.add_argument('--index', type=int, default=0)
+    parser.add_argument('--this-week', action="store_true")
     args = parser.parse_args()
 
-    TARGET_INDEX = args.index # should be argument
+    TARGET_INDEX = args.index
     response = urllib.request.urlopen(INSIDEOUT_URL)
     data = response.read()
     json_data = json.loads(data.decode('utf-8'))
     uploaded_resource_num = len(json_data['data']['radio']['radios_has_sound_sources'])
     print('{} audio files are available'.format(uploaded_resource_num))
-    mp3_url = json_data['data']['radio']['radios_has_sound_sources'][TARGET_INDEX][
-        'sound_source']['sound_file']['url']
-    started_at_str = json_data['data']['radio']['radios_has_sound_sources'][TARGET_INDEX][
-        'sound_source']['start_at']
+
+    target_sound_source = None
+    if args.this_week:
+        today = arrow.now()
+        sound_source_array = json_data['data']['radio']['radios_has_sound_sources']
+        all_started_at_str = []
+        for sound_source in sound_source_array:
+            started_at_str = sound_source['sound_source']['start_at']
+            all_started_at_str.append(started_at_str)
+            started_at = arrow.get(started_at_str).replace(tzinfo='Asia/Tokyo')
+            print(today - started_at)
+            diff = today - started_at
+            # diff should be positive because sound_source can have future date.
+            if diff < datetime.timedelta(days=7) and diff > datetime.timedelta(days=0):
+                target_sound_source = sound_source
+                break
+        if target_sound_source is None:
+            raise Exception('Cannot find archive of thisweek. candidate was {}'.format(', '.join(all_started_at_str)))
+    else:
+        target_sound_source = json_data['data']['radio']['radios_has_sound_sources'][TARGET_INDEX]
+    mp3_url = target_sound_source['sound_source']['sound_file']['url']
+    started_at_str = target_sound_source['sound_source']['start_at']
     started_at = arrow.get(started_at_str).replace(tzinfo='Asia/Tokyo')
     title = '{0:04d}{1:02d}{2:02d}-insideout'.format(
         started_at.year, started_at.month, started_at.day)
